@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn Tập Lịch Sử 12 - Cuối Kì 1</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --light: #f3f4f6;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2ff;
+            margin: 0;
+            padding: 20px;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 { text-align: center; color: var(--primary); }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: white; border: 2px solid var(--primary); color: var(--primary); }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        /* Quiz Layout */
+        .hidden { display: none; }
+        .question-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .question-text { font-weight: bold; margin-bottom: 15px; font-size: 1.1em; }
+        
+        /* Multiple Choice Options */
+        .options-grid { display: grid; gap: 10px; }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .option-label:hover { background: #f9fafb; }
+        .option-label input { margin-right: 10px; }
+        
+        /* True/False Layout */
+        .tf-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .tf-content { flex: 1; margin-right: 15px; }
+        .tf-choices { display: flex; gap: 15px; min-width: 120px; }
+        
+        /* Feedback */
+        .correct-ans { background-color: #dcfce7 !important; border-color: #86efac !important; color: #166534; }
+        .wrong-ans { background-color: #fee2e2 !important; border-color: #fca5a5 !important; color: #991b1b; }
+        .explanation { 
+            margin-top: 10px; 
+            padding: 10px; 
+            background: #f0f9ff; 
+            border-left: 4px solid var(--primary); 
+            font-size: 0.9em;
+        }
+
+        .score-board {
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+        .mode-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e0e7ff;
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="menu-screen">
+    <h1>ÔN TẬP LỊCH SỬ 12</h1>
+    <p style="text-align: center;">Ngân hàng đề: 48 câu Trắc nghiệm + 15 câu Đúng/Sai</p>
+    <div style="margin-top: 30px;">
+        <button class="btn btn-primary" onclick="startQuiz('practice')">LUYỆN TẬP (Biết đáp án ngay)</button>
+        <button class="btn btn-outline" onclick="startQuiz('test')">THI THỬ (Nộp bài mới biết điểm)</button>
+    </div>
+    <p style="text-align: center; font-style: italic; font-size: 0.9em; margin-top: 20px; color: #666;">
+        Hệ thống sẽ trộn ngẫu nhiên 18 câu TN và 4 câu Đ/S mỗi lần thi.
+    </p>
+</div>
+
+<div class="container hidden" id="quiz-screen">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="mode-badge" id="mode-display">Chế độ</span>
+        <span id="timer" style="font-weight: bold; color: var(--danger)"></span>
+    </div>
+    
+    <div id="quiz-content">
+        </div>
+
+    <div id="controls" style="margin-top: 20px;">
+        <button id="btn-submit" class="btn btn-success hidden" onclick="submitTest()">NỘP BÀI</button>
+        <button id="btn-home" class="btn btn-outline hidden" onclick="location.reload()">VỀ TRANG CHỦ</button>
+    </div>
+</div>
+
+<div class="container hidden" id="result-screen">
+    <h2>KẾT QUẢ</h2>
+    <div class="score-board" id="final-score">0/10</div>
+    <div id="result-detail"></div>
+    <button class="btn btn-primary" onclick="location.reload()">LÀM ĐỀ MỚI</button>
+</div>
+
+<script>
+    // --- DỮ LIỆU CÂU HỎI (Đã xử lý từ file) ---
+    const dbPart1 = [
+        {q: "Một trong những địa phương giành được chính quyền sớm nhất trong Tổng khởi nghĩa tháng Tám năm 1945 là", a: ["Cao Bằng", "Hà Tĩnh", "Ninh Bình", "Thanh Hóa"], c: 1},
+        {q: "Sự kiện nào sau đây đánh dấu nước Việt Nam Dân chủ Cộng hòa được thành lập?", a: ["Hồ Chí Minh đọc Tuyên ngôn độc lập (2/9/1945)", "Đại hội quốc dân họp ở Tân Trào (8/1945)", "Hội nghị đại biểu toàn quốc của Đảng (8/1945)", "Tiến hành Tổng tuyển cử bầu Quốc hội (1/1946)"], c: 0},
+        {q: "Đặc điểm nổi bật nhất của Việt Nam sau khi Hiệp định Giơnevơ năm 1954 về Đông Dương được kí kết là", a: ["Pháp rút khỏi miền Bắc, miền Bắc nước ta hoàn toàn giải phóng", "Đất nước tạm thời bị chia cắt làm 2 miền với 2 chế độ chính trị khác nhau", "Pháp chấm dứt chiến tranh xâm lược Đông Dương, rút hết quân về nước", "Ngô Đình Diệm lên nắm quyền, Mĩ âm mưu chia cắt lâu dài Việt Nam"], c: 1},
+        {q: "Một trong những thắng lợi của quân dân miền Nam trong cuộc chiến đấu chống chiến lược “chiến tranh đặc biệt” của Mỹ (1961 - 1965) là", a: ["Núi Thành", "Đồng Xoài", "Vạn Tường", "Đồng khởi"], c: 1},
+        {q: "Thắng lợi nào của nhân dân Việt Nam đã góp phần xóa bỏ chủ nghĩa phát xít trên thế giới?", a: ["Cách mạng tháng Tám 1945", "Hiệp định Giơ ne vơ được ký", "Hiệp định Pa-ris được ký kết", "Chính quyền Xô viết thành lập"], c: 0},
+        {q: "Một trong những mục tiêu của Việt Nam khi mở chiến dịch Điện Biên Phủ (1954) là", a: ["Tiêu diệt sinh lực địch", "Kết thúc chiến tranh", "Mở rộng căn cứ địa", "Liên lạc với bên ngoài"], c: 0},
+        {q: "Một trong những nguyên nhân chủ quan dẫn đến thắng lợi của cuộc kháng chiến chống Pháp (1945 - 1954) là", a: ["Sự lãnh đạo đúng đắn của Đảng", "Viện trợ to lớn của Trung Quốc", "Ba nước Đông Dương đoàn kết", "Phong trào phản đối chiến tranh"], c: 0},
+        {q: "Đâu là một trong những thắng lợi mà nhân dân Việt Nam đã giành được trong cuộc kháng chiến chống Pháp (1945 - 1954)?", a: ["Chiến thắng An Lão", "Chiến thắng Biên giới", "Chiến thắng Cửa Việt", "Chiến thắng Vạn Tường"], c: 1},
+        {q: "Sau Đại hội đại biểu lần thứ II (2-1951), Đảng Cộng sản Đông Dương có tên gọi là", a: ["Đảng Lao động Việt Nam", "Việt Nam quốc dân đảng", "An Nam Cộng sản đảng", "Đông Dương Cộng sản đảng"], c: 0},
+        {q: "Nghị quyết 15 của Đảng Lao động Việt Nam (1959) ra đời trong hoàn cảnh", a: ["Liên Xô, Trung Quốc ủng hộ mạnh mẽ", "Thời cơ để tiến công cách mạng đã đến", "Lực lượng vũ trang ba thứ quân phát triển", "Cách mạng miền Nam bị tổn thất nặng nề"], c: 3},
+        {q: "Đại hội đại biểu toàn quốc lần thứ III của Đảng Lao động Việt Nam (9/1960) đã xác định nhiệm vụ của cách mạng miền Nam là", a: ["Vừa kháng chiến vừa kiến quốc, xây dựng căn cứ địa", "Đấu tranh đòi Mỹ - Diệm thi hành Hiệp định Giơ-ne-vơ", "Hoàn thành cuộc cách mạng dân tộc dân chủ nhân dân", "Khôi phục kinh tế, hàn gắn vết thương của chiến tranh"], c: 2},
+        {q: "Từ năm 1965 - 1968, Mỹ thực hiện chiến lược chiến tranh nào ở miền Nam Việt Nam?", a: ["Chiến tranh đặc biệt", "Chiến tranh cục bộ", "Chiến tranh đơn phương", "Việt Nam hóa chiến tranh"], c: 1},
+        {q: "Một trong những thắng lợi của quân dân miền Nam trong cuộc chiến đấu chống chiến lược “chiến tranh đặc biệt” của Mỹ (1961 - 1965) là", a: ["Núi Thành", "Ấp Bắc", "Vạn Tường", "Đồng khởi"], c: 1},
+        {q: "Đại hội Quốc dân họp ở Tân Trào (từ ngày 16 - 17/8/1945) đã thể hiện", a: ["Ý chí thống nhất đoàn kết và nguyện vọng của toàn dân", "Cuộc Tổng khởi nghĩa đã diễn ra và thắng lợi nhanh chóng", "Chủ trương Tổng khởi nghĩa giành chính quyền của Đảng", "Quyết tâm phối hợp với phe Đồng minh để chống phát xít"], c: 0},
+        {q: "Thời cơ của Tổng khởi nghĩa tháng Tám được xác định trong khoảng thời gian từ khi", a: ["Nhật đảo chính Pháp đến trước khi quân Đồng minh vào Đông Dương", "Mỹ tuyên chiến với Nhật đến trước khi quân Đồng minh vào Đông Dương", "Nhật đảo chính Pháp đến trước khi quân Đồng minh vào Đông Dương", "Nhật đầu hàng Đồng minh đến trước khi quân Đồng minh vào Đông Dương"], c: 3},
+        {q: "Cuộc kháng chiến chống Mĩ, cứu nước của nhân dân Việt Nam (1954-1975) kết thúc thắng lợi đã", a: ["Cổ vũ mạnh mẽ phong trào đấu tranh vũ trang ở các nước Đông Nam Á", "Mở ra kỉ nguyên đất nước độc lập, thống nhất và đi lên chủ nghĩa xã hội", "Tạo điều kiện để cả nước hoàn thành cách mạng dân tộc dân chủ nhân dân", "Chấm dứt vĩnh viễn ách thống trị của chủ nghĩa thực dân mới trên thế giới"], c: 1},
+        {q: "Tháng 3 năm 1988, Trung Quốc đã sử dụng lực lượng lớn tấn công vào đảo", a: ["Phú Lâm", "Gạc Ma", "Đá Bắc", "Hữu Nhật"], c: 1},
+        {q: "Bài học lịch sử của các cuộc kháng chiến bảo vệ Tổ quốc từ năm 1945 đến nay vẫn có giá trị to lớn đối với công cuộc xây dựng đất là", a: ["Tăng cường khối đại đoàn kết toàn dân", "Liên minh chặt chẽ với Liên Xô, Trung Quốc", "Gia nhập vào các khối liên minh quân sự", "Thiết lập quan hệ chiến lược với các nước"], c: 0},
+        {q: "Một trong những hành động khẳng định chủ quyền của Chính phủ Việt Nam đối với quần đảo Trường Sa và Hoàng Sa là", a: ["Đưa lực lượng ra thực thi chủ quyền", "Đã xây dựng nhiều căn cứ quân sự", "Cho Mỹ thuê lại các bến cảng ở đảo", "Xây dựng các sân bay quốc tế lớn"], c: 0},
+        {q: "Bài học kinh nghiệm nào sau đây được rút ra trong cuộc kháng chiến chống Mỹ cứu nước (1954-1975) vẫn còn nguyên giá trị đối với hôm nay", a: ["Thực hiện thế trận chiến tranh nhân dân", "Xây dựng liên minh quân sự với Ấn Độ", "Gia nhập vào các khối liên minh quân sự", "Liên kết chặt chẽ với các nước Đông Âu"], c: 0},
+        {q: "Bài học kinh nghiệm nào sau đây được rút ra từ cuộc kháng chiến chống Pháp (1945 - 1954) vẫn còn nguyên giá trị đến ngày nay?", a: ["Phát huy tinh thần yêu nước của nhân dân", "Xây dựng nhiều tập đoàn quân chiến đấu", "Thực hiện cùng lúc bốn nhiệm vụ chiến lược", "Tham gia khối liên minh quân sự của Liên Xô"], c: 0},
+        {q: "Một trong những điểm tương đồng về mục tiêu mở các chiến dịch trong kháng chiến chống Pháp (1945 - 1954) của quân và dân Việt Nam là", a: ["Củng cố căn cứ địa Việt Bắc", "Tiêu diệt bộ phận sinh lực địch", "Giải phóng Tây Bắc, Trung Lào", "Để đánh bại kế hoạch bình định"], c: 1},
+        {q: "Một trong những địa phương giành được chính quyền sớm nhất trong Tổng khởi nghĩa tháng Tám năm 1945 là", a: ["Thanh Hóa", "Quảng Nam", "Hưng Yên", "Cao Bằng"], c: 1},
+        {q: "Một trong những địa phương giành chính quyền sau cùng trong Tổng khởi nghĩa tháng Tám năm 1945 là", a: ["Cần Thơ", "Hà Tiên", "Móng Cái", "Lai Châu"], c: 1},
+        {q: "Ngày 13/8/1945, Trung ương Đảng và Tổng bộ Việt Minh đã thông qua quyết định nào sau đây?", a: ["Phát lệnh Tổng khởi nghĩa trên cả nước", "Thống nhất lực lượng vũ trang Việt Nam", "Quyết định khởi nghĩa ở Hà Nội", "Phát động cao trào kháng Nhật"], c: 0},
+        {q: "Trong thời kỳ 1945-1954, quân đội và nhân dân Việt Nam đã mở chiến dịch nào để tiêu diệt tập đoàn cứ điểm lớn nhất của thực dân Pháp ở Đông Dương?", a: ["Điện Biên Phủ", "Việt Bắc", "Thượng Lào", "Biên giới"], c: 0},
+        {q: "Chiến thắng biên giới Tây Nam của quân dân Việt Nam có ý nghĩa như thế nào đối với cách mạng Cam-pu-chia?", a: ["Tạo thời cơ thuận lợi cho cách mạng thắng lợi", "Tiêu diệt hoàn toàn chế độ Pôn-pốt - Iêng-xa-ri", "Tăng cường tình đoàn kết các nước Đông Nam Á", "Tạo nên sức mạnh của Việt Nam và Cam-pu-chia"], c: 1},
+        {q: "Đại hội đại biểu toàn quốc lần thứ III của Đảng Lao động Việt Nam (9/1960) đã xác định nhiệm vụ của cách mạng miền Bắc là", a: ["Tiến lên chủ nghĩa xã hội", "Cải tạo xã hội chủ nghĩa", "Trực tiếp chống Mỹ - Diệm", "Chống chiến tranh phá hoại"], c: 0},
+        {q: "Từ năm 1961 - 1965, Mỹ thực hiện chiến lược chiến tranh nào ở miền Nam Việt Nam?", a: ["Chiến tranh đặc biệt", "Chiến tranh cục bộ", "Chiến tranh đơn phương", "Việt Nam hóa chiến tranh"], c: 0},
+        {q: "Một trong những thắng lợi của quân dân miền Nam trong cuộc chiến đấu chống chiến lược “chiến tranh cục bộ” của Mỹ (1965 - 1968) là", a: ["Đồng Xoài", "Vạn Tường", "Trung Lào", "Bình Giã"], c: 1},
+        {q: "Một trong những nguyên nhân khách quan dẫn tới thắng lợi của Cách mạng tháng Tám (1945) là", a: ["Những thắng lợi của khối Đồng minh", "Sự chuẩn bị của Đảng trong 15 năm", "Tinh thần đoàn kết của nhân dân", "Sự giúp đỡ của Liên Xô, Trung Quốc"], c: 0},
+        {q: "Sự kiện nào dưới đây đánh dấu chế độ phong kiến ở Việt Nam đã sụp đổ hoàn toàn?", a: ["Giành được chính quyền ở Hà Nội", "Vua Bảo Đại đã tuyên bố thoái vị", "Khởi nghĩa thắng lợi trong cả nước", "Hồ Chí Minh đọc Tuyên ngôn Độc lập"], c: 1},
+        {q: "Một trong những khó khăn thử thách mà cách mạng Việt Nam phải đương đầu sau thắng lợi của Cách mạng tháng Tám (1945) là", a: ["Các nước đế quốc bao vây, cấm vận kinh tế", "Những hậu quả nặng nề của chiến tranh để lại", "Quân đội các nước Đồng minh lũ lượt kéo vào", "Quân Tưởng hỗ trợ cho Pháp đánh Nam Bộ"], c: 2},
+        {q: "Một trong những nguyên nhân bùng nổ của cuộc kháng chiến toàn quốc chống thực dân Pháp (12-1946) là do", a: ["Pháp bội ước, buộc Việt Nam đầu hàng", "Nhân dân Việt Nam quyết tâm chiến đấu", "Việt Nam có được giúp đỡ của Liên Xô", "Pháp không chấp nhận ký hiệp định mới"], c: 0},
+        {q: "Quân dân Việt Nam đã giành quyền chủ động trên chiến trường chính Bắc Bộ sau thắng lợi của chiến dịch nào sau đây?", a: ["Tầm Vu (1948)", "Biên Giới (1950)", "Việt Bắc (1947)", "Hòa Bình (1951)"], c: 1},
+        {q: "Chiến thuật nào sau đây được Mỹ sử dụng trong chiến lược “chiến tranh cục bộ” ở miền Nam Việt Nam (1965 - 1968)?", a: ["Tìm diệt và bình định", "Đánh chắc tiến chắc", "Chiến tranh tổng lực", "Bình định lấn chiếm"], c: 0},
+        {q: "Sau năm 1954, nguyên nhân nào sau đây khiến cho cách mạng miền Nam tổn thất nặng nề?", a: ["Miền Bắc đã không chi viện về vũ khí", "Mỹ - Diệm khủng bố, đàn áp cách mạng", "Sự chống phá của các thế lực bên ngoài", "Trung Quốc, Liên Xô cô lập cách mạng"], c: 1},
+        {q: "Thắng lợi nào của quân và dân Việt Nam đã buộc Mỹ phải đến đàm phán tại hội nghị Pa-ris?", a: ["Mậu Thân", "Vạn Tường", "Núi Thành", "Phước Long"], c: 0},
+        {q: "Một trong những điểm giống nhau của chiến lược Việt Nam hóa chiến tranh (1969-1973) và chiến lược chiến tranh cục bộ (1965-1968) mà Mỹ đã thực hiện ở miền Nam là", a: ["Lực lượng chiến đấu chủ yếu", "Phạm vi thực hiện chiến tranh", "Mục đích tiến hành chiến tranh", "Thủ đoạn mới được thực hiện"], c: 2},
+        {q: "Bài học kinh nghiệm nào sau đây được rút ra trong cuộc kháng chiến chống Mỹ cứu nước (1954-1975) vẫn còn nguyên giá trị đối với hôm nay", a: ["Kiên quyết sử dụng bạo lực giải quyết tranh chấp", "Kiên trì sự lãnh đạo của Đảng Cộng sản Việt Nam", "Thực hiện cùng lúc nhiều nhiệm vụ cách mạng mới", "Tranh thủ tối đa sự viện trợ từ các nước đồng minh"], c: 1},
+        {q: "Nhận xét nào sau đây là đúng về cuộc Tổng khởi nghĩa tháng Tám năm 1945 ở Việt Nam?", a: ["Điều kiện khách quan giữ vai trò quyết định thắng lợi của cách mạng", "Sự kiện Nhật đảo chính Pháp là điều kiện bùng nổ cuộc tổng khởi nghĩa", "Những điều kiện chủ quan quyết định thắng lợi của cuộc tổng khởi nghĩa", "Thắng lợi của tổng khởi nghĩa không phụ thuộc vào điều kiện khách quan"], c: 2},
+        {q: "Năm 1953 thực dân Pháp thực hiện kế hoạch quân sự Na va nhằm", a: ["Giành một thắng lợi quyết định để “kết thúc chiến tranh trong danh dự”", "Giành lấy một thắng lợi quân sự để tiếp tục cuộc chiến tranh xâm lược Việt Nam", "Giành lại quyền chủ động chiến lược trên chiến trường chính Bắc Bộ", "Giành thắng lợi quân sự để nâng cao vị thế của nước Pháp trên thế giới"], c: 0},
+        {q: "Chiến thắng biên giới Tây Nam của quân dân Việt Nam có ý nghĩa như thế nào đối với cách mạng Cam-pu-chia?", a: ["Tạo thời cơ thuận lợi cho cách mạng thắng lợi", "Tiêu diệt hoàn toàn chế độ Pôn-pốt - Iêng-xa-ri", "Tăng cường tình đoàn kết các nước Đông Nam Á", "Tạo nên sức mạnh của Việt Nam và Cam-pu-chia"], c: 1},
+        {q: "Ý nào sau đây là bối cảnh trong nước của các cuộc đấu tranh bảo vệ Tổ quốc từ sau tháng 4-1975 ở Việt Nam?", a: ["Xu thế hoà hoãn Đông - Tây tiếp tục diễn ra", "Đất nước mới chỉ giải phóng được miền Bắc", "Đất nước thống nhất, đi lên chủ nghĩa xã hội", "Chưa thống nhất đất nước"], c: 2},
+        {q: "Sau khi lên nắm quyền (4/1975), tập đoàn Pôn Pốt – Iêng Xa-ri – Khiêu Xăm-phon đã có hành động nào sau đây?", a: ["Tiến hành công cuộc xây dựng chủ nghĩa xã hội trong cả nước", "Tiến hành các hoạt động khiêu khích, lấn chiếm lãnh thổ Việt Nam", "Ủng hộ, giúp đỡ công cuộc xây dựng đất nước Việt Nam", "Liên kết với các nước Đông Nam Á để chống lại Trung Quốc"], c: 1},
+        {q: "Một trong những ý nghĩa lịch sử của các cuộc kháng chiến bảo vệ Tổ quốc từ năm 1945 đến nay là", a: ["Củng cố sức mạnh của hệ thống các nước xã hội chủ nghĩa trên thế giới", "Bảo vệ vững chắc độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ quốc gia", "Tạo điều kiện cho Việt Nam có đủ điều kiện được gia nhập tổ chức ASEAN", "Thể hiện tinh thần đoàn kết chiến đấu của nhân dân 3 nước Đông Dương"], c: 1},
+        {q: "Một trong những bài học xuyên suốt, trở thành nhân tố cơ bản nhất quyết định thắng lợi của cách mạng Việt Nam từ năm 1945 đến nay là", a: ["Kết hợp sức mạnh dân tộc với sức mạnh thời đại", "Sự lãnh đạo đúng đắn của Đảng Cộng sản Việt Nam", "Nắm vững ngọn cờ độc lập dân tộc và chủ nghĩa xã hội", "Không ngừng củng cố và tăng cường khối đoàn kết dân tộc"], c: 1},
+        {q: "Nội dung nào sau đây phản ánh đúng ý nghĩa quốc tế của các cuộc đấu tranh bảo vệ Tổ quốc Việt Nam từ sau tháng 4 năm 1975?", a: ["Làm thất bại ý đồ và hành động xâm lược, chống phá của các thế lực thù địch", "Bảo vệ vững chắc độc lập, chủ quyền, thống nhất và toàn vẹn lãnh thổ của Tổ quốc", "Góp phần bảo vệ độc lập dân tộc, hòa bình ở Đông Dương và khu vực Đông Nam Á", "Tạo điều kiện thuận lợi cho sự nghiệp xây dựng chủ nghĩa xã hội trên phạm vi cả nước"], c: 2}
+    ];
+
+    const dbPart2 = [
+        {
+            context: "Đoạn tư liệu về CMT8: 'Không những giật tung được xiềng xích của bọn đế quốc phát xít, Cách mạng tháng Tám lại lật nhào được chế độ quân chủ...'",
+            items: [
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam đã chấm dứt chế độ quân chủ tồn tại nhiều thế kỉ.", v: true},
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam đã xoá bỏ mọi tàn dư của chủ nghĩa thực dân cũ trên đất nước Việt Nam.", v: false},
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam góp phần làm tan rã hệ thống thuộc địa của chủ nghĩa thực dân trên thế giới.", v: true},
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam mang tính chất dân chủ, góp phần vào giải phóng con người.", v: true}
+            ]
+        },
+        {
+            context: "Tư liệu về cuộc chiến đấu ở các đô thị: 'Diễn ra từ ngày 19/12/1946 đến 17/2/1947... làm thất bại một bước kế hoạch đánh nhanh, thắng nhanh...'",
+            items: [
+                {t: "Tư liệu trên nói về giai đoạn đầu của cuộc kháng chiến toàn quốc chống thực dân Pháp.", v: true},
+                {t: "Cuộc chiến đấu ở các đô thị mở ra bước phát triển mới của cuộc kháng chiến toàn quốc.", v: false},
+                {t: "Cuộc chiến đấu ở các đô thị đã tiêu diệt đại bộ phận quân Pháp, tạo ra thời cơ phản công.", v: false},
+                {t: "Sau cuộc chiến đấu ở các đô thị, Pháp chuyển sang chiến lược đánh lâu dài với Việt Nam.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về Hiệp định Giơ-ne-vơ: 'Ngay sau Hiệp định Giơ-ne-vơ, Mỹ thay chân Pháp... biến miền Nam Việt Nam thành thuộc địa kiểu mới...'",
+            items: [
+                {t: "Với quyết định của Hiệp định Giơ-ne-vơ, Việt Nam bị chia cắt làm hai quốc gia.", v: false},
+                {t: "Miền Nam đã trở thành quốc gia độc lập tự chủ và là thuộc địa kiểu mới của Mỹ.", v: false},
+                {t: "Miền Bắc có hòa bình và tiến lên xây dựng chủ nghĩa xã hội, làm hậu phương lớn.", v: true},
+                {t: "Cách mạng Việt Nam sau năm 1954 nhiệm vụ chung cả 2 miền là chống Mỹ cứu nước.", v: true}
+            ]
+        },
+        {
+            context: "Tư liệu về nghệ thuật chớp thời cơ: 'Nếu như trong cuộc Cách mạng Tháng Tám năm 1945, Đảng biết chuẩn bị lực lượng...'",
+            items: [
+                {t: "Nghệ thuật chớp thời cơ đã được Đảng vận dụng một cách sáng tạo, linh hoạt trong cả Cách mạng Tháng Tám năm 1945 và cuộc Tổng tiến công mùa Xuân năm 1975.", v: true},
+                {t: "Một trong những nhân tố quan trọng quyết định thắng lợi của cuộc Tổng tiến công mùa Xuân năm 1975 là sự lãnh đạo sáng suốt của Đảng.", v: true},
+                {t: "Cuộc Tổng tiến công và nổi dậy Mùa Xuân năm 1975 được mở ra nhằm đánh bại hoàn toàn chiến tranh xâm lược và ách thống trị thực dân mới của đế quốc Mỹ, giải phóng hoàn toàn miền Nam.", v: true},
+                {t: "Sau khi Hiệp định Paris được ký kết, ta đã hoàn thành nhiệm vụ “Đánh cho Mỹ cút, đánh cho Nguỵ nhào”.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về ý nghĩa kháng chiến chống Mỹ: 'Năm tháng sẽ trôi qua... một biểu tượng sáng ngời về sự toàn thắng của chủ nghĩa anh hùng cách mạng...'",
+            items: [
+                {t: "Tư liệu trên nói về ý nghĩa cuộc kháng chiến chống Mỹ cứu nước của nhân dân Việt Nam.", v: true},
+                {t: "Thắng lợi trong cuộc kháng chiến chống Mỹ cứu nước của nhân dân ta có tầm quan trọng quốc tế to lớn và tính thời đại sâu sắc.", v: true},
+                {t: "Cuộc kháng chiến chống Mỹ của nhân dân ta thắng lợi đã chấm dứt hoàn toàn chủ nghĩa thực dân mới trên thế giới.", v: false},
+                {t: "Cuộc kháng chiến chống Mỹ ở Việt Nam mang tính chất giải phóng dân tộc và bảo vệ tổ quốc.", v: true}
+            ]
+        },
+        {
+            context: "Tư liệu về chiến tranh bảo vệ Tổ quốc: 'Các cuộc kháng chiến bảo vệ Tổ quốc từ năm 1945 đến nay gắn liền với vai trò lãnh đạo của Đảng...'",
+            items: [
+                {t: "Các cuộc chiến tranh bảo vệ tổ quốc từ 1945 mang tính chính nghĩa, tính nhân dân.", v: true},
+                {t: "Chính trị, quân sự, binh vận là 3 mặt trận trong các cuộc chiến tranh bảo vệ tổ quốc.", v: true},
+                {t: "Lực lượng vũ trang ba thứ quân là nòng cốt của các cuộc chiến tranh bảo vệ tổ quốc.", v: true},
+                {t: "Các cuộc chiến tranh bảo vệ tổ quốc từ 1945 đều kết thúc bằng giải pháp ngoại giao.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về CMT8 (Trường Chinh): 'Không những giật tung được xiềng xích của bọn đế quốc phát xít, Cách mạng tháng Tám lại lật nhào được chế độ quân chủ...'",
+            items: [
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam đã chấm dứt chế độ quân chủ tồn tại nhiều thế kỉ.", v: true},
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam đã xoá bỏ mọi tàn dư của chủ nghĩa thực dân cũ trên đất nước Việt Nam.", v: false},
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam góp phần làm tan rã hệ thống thuộc địa của chủ nghĩa thực dân trên thế giới.", v: true},
+                {t: "Cách mạng tháng Tám năm 1945 ở Việt Nam mang tính chất dân chủ, góp phần vào giải phóng con người.", v: true}
+            ]
+        },
+        {
+            context: "Tư liệu về chính quyền Ngô Đình Diệm: 'Đế quốc Mỹ và chính quyền Sài Gòn do Ngô Đình Diệm đứng đầu đã trắng trợn phá bỏ Hiệp định Giơ-ne-vơ...'",
+            items: [
+                {t: "Sau Hiệp định Giơ-ne-vơ năm 1954 về Đông Dương, Pháp dựng lên chính quyền tay sai Ngô Đình Diệm cốt là để trì hoãn việc thống nhất đất nước ở Việt Nam.", v: false},
+                {t: "Trong những năm 1957-1959, chính quyền Ngô Đình Diệm đã thi hành chính sách phản động tàn bạo khiến cách mạng miền Nam tổn thất nặng nề.", v: true},
+                {t: "Trước sự phá hoại của đế quốc Mỹ và chính quyền Ngô Đình Diệm, Đảng ta quyết định sử dụng bạo lực cách mạng.", v: true},
+                {t: "Nghị quyết 15 (năm 1959) đã thổi bùng lên một phong trào đấu tranh chống Mĩ-Diệm lan rộng khắp cả nước.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về Võ Nguyên Giáp về Hà Nội: 'Suốt dọc đường đi bộ về Hà Nội, Võ Nguyên Giáp và binh sỹ của ông đón nhận sự ủng hộ rầm rộ...'",
+            items: [
+                {t: "Tư liệu trên nói về những sự kiện liên quan đến Cách mạng tháng Tám năm 1945.", v: true},
+                {t: "Hà Nội đã giành chính quyền sau khi tiêu diệt hoàn toàn quân đội phát xít Nhật.", v: false},
+                {t: "Quần chúng nhân dân đã giành sự ủng hộ rất to lớn cho các lực lượng cách mạng.", v: true},
+                {t: "Võ Nguyên Giáp là lãnh tụ tối cao của Cách mạng tháng Tám 1945 ở Việt Nam.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về chiến dịch Việt Bắc: 'Chiến dịch Việt Bắc là chiến dịch phản công lớn đầu tiên của lực lượng vũ trang cách mạng...'",
+            items: [
+                {t: "Chiến dịch Việt Bắc là chiến dịch phản công lớn đầu tiên và cũng là thắng lợi quân sự đầu tiên của quân dân ta trong kháng chiến chống Pháp.", v: false},
+                {t: "Chiến dịch Việt Bắc đã làm thất bại hoàn toàn kế hoạch “đánh nhanh thắng nhanh” của thực dân Pháp.", v: true},
+                {t: "Chiến dịch Việt Bắc thu đông 1947 có sự lãnh đạo của Đảng Lao Động Việt Nam.", v: false},
+                {t: "Chiến dịch Việt Bắc thu đông 1947 đã kết thúc 30 năm kháng chiến chống thực dân Pháp của quân dân Việt Nam.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về ý nghĩa KC chống Mỹ (lặp lại câu 53 nhưng kiểm tra lại): 'Năm tháng sẽ trôi qua...'",
+            items: [
+                {t: "Tư liệu trên nói về ý nghĩa cuộc kháng chiến chống Mỹ của nhân dân Việt Nam.", v: true},
+                {t: "Thắng lợi của cuộc kháng chiến chống Mỹ, cứu nước đã mở ra kỉ nguyên mới của Việt Nam.", v: true},
+                {t: "Cuộc kháng chiến chống Mỹ cứu nước của nhân dân Việt Nam có tầm quan trọng quốc tế to lớn và tính thời đại sâu sắc.", v: true},
+                {t: "Sau cuộc kháng chiến chống Mỹ thắng lợi, Việt Nam không còn phải đối mặt với cuộc chiến tranh nào nữa.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về chiến tranh biên giới: 'Chúng ta đã liên tiếp chiến thắng oanh liệt trên hai mặt trận biên giới Tây Nam và biên giới phía Bắc...'",
+            items: [
+                {t: "Cuộc chiến đấu bảo vệ biên giới Tây Nam và phía Bắc đã bảo vệ độc lập chủ quyền và toàn vẹn lãnh thổ Tổ Quốc Việt Nam.", v: true},
+                {t: "Hai cuộc chiến đấu bảo vệ biên giới Tây Nam và phía Bắc thể hiện sự phối hợp chiến đấu của nhân dân Việt Nam và Liên Xô.", v: false},
+                {t: "Trong cuộc chiến đấu bảo vệ biên giới Tây Nam, nhân dân Việt Nam còn thực hiện nhiệm vụ quốc tế đối với nhân dân Campuchia.", v: true},
+                {t: "Cuộc chiến đấu bảo vệ biên giới Tây Nam và phía Bắc đã góp phần bảo vệ hòa bình ổn định của khu vực Đông Nam Á.", v: true}
+            ]
+        },
+        {
+            context: "Tư liệu ý nghĩa KC chống Mỹ (Câu 61): 'Năm tháng sẽ trôi qua...'",
+            items: [
+                {t: "Tư liệu trên nói về ý nghĩa cuộc kháng chiến chống Mỹ của nhân dân Việt Nam.", v: true},
+                {t: "Thắng lợi của cuộc kháng chiến chống Mỹ, cứu nước đã mở ra kỉ nguyên mới của Việt Nam.", v: true},
+                {t: "Cuộc kháng chiến chống Mỹ cứu nước của nhân dân Việt Nam có tầm quan trọng quốc tế to lớn và tính thời đại sâu sắc.", v: true},
+                {t: "Sau cuộc kháng chiến chống Mỹ thắng lợi, Việt Nam không còn phải đối mặt với cuộc chiến tranh nào nữa.", v: false}
+            ]
+        },
+        {
+            context: "Tư liệu về Mĩ - Diệm phá hoại (Câu 62): 'Đế quốc Mỹ và chính quyền Sài Gòn do Ngô Đình Diệm đứng đầu đã trắng trợn phá bỏ Hiệp định Giơ-ne-nơ...'",
+            items: [
+                {t: "Sau Hiệp định Giơ-ne-vơ năm 1954 về Đông Dương, Pháp dựng lên chính quyền tay sai Ngô Đình Diệm cốt là để trì hoãn việc thống nhất đất nước ở Việt Nam.", v: false},
+                {t: "Từ thực tiễn đất nước và sự phá hoại của Mỹ cùng chính quyền Ngô Đình Diệm, nếu chỉ sử dụng hình thức đấu tranh hoà bình sẽ không thể thống nhất Tổ quốc.", v: true},
+                {t: "Đặc điểm lớn nhất và độc đáo nhất của cách mạng Việt Nam (1954 - 1975) là một đảng thống nhất lãnh đạo cả nước thực hiện đồng thời nhiều nhiệm vụ chiến lược.", v: false},
+                {t: "Chiến dịch Hồ Chí Minh kết thúc thắng lợi đã hoàn thành sự nghiệp kháng chiến chống Mỹ, cứu nước; đồng thời mở ra kỉ nguyên mới cho cả dân tộc.", v: true}
+            ]
+        },
+        {
+            context: "Tư liệu về bảo vệ Tổ quốc sau 1975 (Câu 63): 'Thắng lợi của cuộc đấu tranh bảo vệ Tổ quốc của quân dân Việt Nam từ sau tháng 4-1975...'",
+            items: [
+                {t: "Thắng lợi của cuộc đấu tranh bảo vệ Tổ quốc Việt Nam từ sau 4- 1975 đã làm thất bại ý đồ và hành động xâm lược, chống phá của các thế lực thù địch.", v: true},
+                {t: "Thắng lợi của cuộc đấu tranh bảo vệ Tổ quốc Việt Nam từ sau 4 - 1975 tạo điều kiện cho sự nghiệp xây dựng chủ nghĩa xã hội trên phạm vị cả nước.", v: true},
+                {t: "Thắng lợi của cuộc đấu tranh bảo vệ Tổ quốc Việt Nam từ sau 4 - 1975 giúp Việt Nam đặt quan hệ ngoại giao, hợp tác với tất cả các nước trên thế giới.", v: false},
+                {t: "Thắng lợi của cuộc đấu tranh bảo vệ Tổ quốc Việt Nam từ sau 4 - 1975 góp phần bảo vệ độc lập dân tộc, hòa bình ở Đông Dương và khu vực Đông Nam Á.", v: true}
+            ]
+        }
+    ];
+
+    // --- LOGIC ỨNG DỤNG ---
+    let currentQuiz = [];
+    let userAnswers = {};
+    let currentMode = 'practice';
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function startQuiz(mode) {
+        currentMode = mode;
+        document.getElementById('menu-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        
+        document.getElementById('mode-display').textContent = mode === 'practice' ? "Chế độ: Luyện tập" : "Chế độ: Thi thử";
+        
+        // Tạo đề: 18 câu TN + 4 câu Đ/S
+        const p1 = shuffle([...dbPart1]).slice(0, 18);
+        const p2 = shuffle([...dbPart2]).slice(0, 4);
+        
+        // Map data về format chung để hiển thị
+        currentQuiz = [
+            ...p1.map((q, i) => ({...q, type: 'mc', id: `p1_${i}`})),
+            ...p2.map((q, i) => ({...q, type: 'tf', id: `p2_${i}`}))
+        ];
+        
+        userAnswers = {};
+        renderQuiz();
+    }
+
+    function renderQuiz() {
+        const container = document.getElementById('quiz-content');
+        container.innerHTML = '';
+        
+        // Hiển thị nút Nộp bài nếu là chế độ Thi
+        if (currentMode === 'test') {
+            document.getElementById('btn-submit').classList.remove('hidden');
+            document.getElementById('btn-home').classList.add('hidden');
+        } else {
+            document.getElementById('btn-submit').classList.add('hidden');
+            document.getElementById('btn-home').classList.remove('hidden');
+        }
+
+        currentQuiz.forEach((q, index) => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            
+            // Số thứ tự
+            const title = document.createElement('div');
+            title.className = 'question-text';
+            title.innerHTML = `Câu ${index + 1}: ${q.type === 'tf' ? '(Đúng/Sai) ' + q.context : q.q}`;
+            card.appendChild(title);
+
+            if (q.type === 'mc') {
+                const grid = document.createElement('div');
+                grid.className = 'options-grid';
+                q.a.forEach((opt, optIndex) => {
+                    const label = document.createElement('label');
+                    label.className = 'option-label';
+                    label.id = `label_${q.id}_${optIndex}`;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = q.id;
+                    input.value = optIndex;
+                    
+                    // Sự kiện click
+                    input.onchange = () => {
+                        if(currentMode === 'practice') {
+                            checkPracticeMC(q, optIndex);
+                            // Disable các lựa chọn khác sau khi chọn
+                            const allInputs = document.getElementsByName(q.id);
+                            allInputs.forEach(inp => inp.disabled = true);
+                        } else {
+                            userAnswers[q.id] = optIndex;
+                        }
+                    };
+
+                    label.appendChild(input);
+                    label.appendChild(document.createTextNode(String.fromCharCode(65 + optIndex) + ". " + opt));
+                    grid.appendChild(label);
+                });
+                card.appendChild(grid);
+                
+                // Div giải thích cho practice mode
+                const explain = document.createElement('div');
+                explain.id = `explain_${q.id}`;
+                explain.className = 'explanation hidden';
+                card.appendChild(explain);
+
+            } else if (q.type === 'tf') {
+                q.items.forEach((item, itemIndex) => {
+                    const row = document.createElement('div');
+                    row.className = 'tf-item';
+                    
+                    const content = document.createElement('div');
+                    content.className = 'tf-content';
+                    content.textContent = String.fromCharCode(97 + itemIndex) + ") " + item.t;
+                    
+                    const choices = document.createElement('div');
+                    choices.className = 'tf-choices';
+                    
+                    // Radio Đúng
+                    const labelTrue = document.createElement('label');
+                    const inputTrue = document.createElement('input');
+                    inputTrue.type = 'radio';
+                    inputTrue.name = `${q.id}_${itemIndex}`;
+                    inputTrue.value = 'true';
+                    labelTrue.appendChild(inputTrue);
+                    labelTrue.appendChild(document.createTextNode(" Đúng"));
+
+                    // Radio Sai
+                    const labelFalse = document.createElement('label');
+                    const inputFalse = document.createElement('input');
+                    inputFalse.type = 'radio';
+                    inputFalse.name = `${q.id}_${itemIndex}`;
+                    inputFalse.value = 'false';
+                    labelFalse.appendChild(inputFalse);
+                    labelFalse.appendChild(document.createTextNode(" Sai"));
+                    
+                    // Logic check
+                    const checkHandler = (val) => {
+                         if(currentMode === 'practice') {
+                             const isCorrect = (val === 'true') === item.v;
+                             row.style.background = isCorrect ? '#dcfce7' : '#fee2e2';
+                             inputTrue.disabled = true;
+                             inputFalse.disabled = true;
+                         } else {
+                             if (!userAnswers[q.id]) userAnswers[q.id] = {};
+                             userAnswers[q.id][itemIndex] = (val === 'true');
+                         }
+                    };
+
+                    inputTrue.onchange = () => checkHandler('true');
+                    inputFalse.onchange = () => checkHandler('false');
+
+                    choices.appendChild(labelTrue);
+                    choices.appendChild(labelFalse);
+                    
+                    row.appendChild(content);
+                    row.appendChild(choices);
+                    card.appendChild(row);
+                });
+            }
+
+            container.appendChild(card);
+        });
+    }
+
+    function checkPracticeMC(q, selectedIndex) {
+        const correctIndex = q.c;
+        const correctLabel = document.getElementById(`label_${q.id}_${correctIndex}`);
+        const selectedLabel = document.getElementById(`label_${q.id}_${selectedIndex}`);
+        
+        correctLabel.classList.add('correct-ans');
+        if (selectedIndex !== correctIndex) {
+            selectedLabel.classList.add('wrong-ans');
+        }
+        
+        const expDiv = document.getElementById(`explain_${q.id}`);
+        expDiv.innerHTML = selectedIndex === correctIndex 
+            ? "✅ Chính xác!" 
+            : `❌ Sai rồi. Đáp án đúng là: <b>${String.fromCharCode(65 + correctIndex)}</b>`;
+        expDiv.classList.remove('hidden');
+    }
+
+    function submitTest() {
+        if (!confirm("Bạn có chắc chắn muốn nộp bài?")) return;
+        
+        let score = 0;
+        let totalPoints = 0; // Tính theo câu hỏi
+        
+        // Logic tính điểm:
+        // Phần 1: Mỗi câu 0.25 điểm (giả định thang 10, 18 câu ~ 4.5đ, nhưng để đơn giản ta đếm số câu đúng)
+        // Để đơn giản hiển thị: Số câu đúng / Tổng số câu (22 câu)
+        
+        let correctCount = 0;
+
+        currentQuiz.forEach(q => {
+            const card = document.getElementsByClassName('question-card')[currentQuiz.indexOf(q)];
+            
+            if (q.type === 'mc') {
+                const userAns = userAnswers[q.id];
+                const labelCorrect = document.getElementById(`label_${q.id}_${q.c}`);
+                labelCorrect.classList.add('correct-ans'); // Show correct anyway
+                
+                if (userAns !== undefined) {
+                    const labelUser = document.getElementById(`label_${q.id}_${userAns}`);
+                    if (userAns === q.c) {
+                        correctCount++;
+                    } else {
+                        labelUser.classList.add('wrong-ans');
+                    }
+                }
+            } else if (q.type === 'tf') {
+                // Với câu đúng sai, phải đúng cả 4 ý mới tính là 1 câu đúng (hoặc tính từng ý nhỏ).
+                // Ở đây ta tính điểm theo ý nhỏ để khích lệ: 1 câu lớn = 4 ý nhỏ.
+                // Tuy nhiên đề bài yêu cầu "Bộ 22 câu". Ta sẽ tính 1 câu Đ/S được tính là đúng nếu đúng hết?
+                // Thường thì TN 4 ý sẽ tính điểm từng ý.
+                // Để đơn giản hóa hiển thị kết quả tổng quát: Ta tính số ý đúng trong phần Đ/S.
+                // Nhưng để hiển thị "Câu đúng / 22", ta cần logic gắt hơn. 
+                // Tạm tính: Mỗi câu TN = 1 điểm. Mỗi ý Đ/S = 0.25 điểm.
+                
+                let subCorrect = 0;
+                q.items.forEach((item, idx) => {
+                    const inputs = document.getElementsByName(`${q.id}_${idx}`);
+                    const userVal = userAnswers[q.id] ? userAnswers[q.id][idx] : undefined;
+                    
+                    // Highlight rows
+                    const row = inputs[0].closest('.tf-item');
+                    if (userVal === item.v) {
+                        subCorrect++;
+                        row.style.background = '#dcfce7';
+                    } else if (userVal !== undefined) {
+                        row.style.background = '#fee2e2';
+                    }
+                    
+                    // Show correct answer text append
+                    const txt = document.createElement('span');
+                    txt.style.fontWeight = 'bold';
+                    txt.style.marginLeft = '10px';
+                    txt.style.color = 'var(--primary)';
+                    txt.innerText = `[Đáp án: ${item.v ? 'Đúng' : 'Sai'}]`;
+                    row.appendChild(txt);
+                });
+                
+                // Quy đổi điểm câu này
+                correctCount += (subCorrect / 4);
+            }
+        });
+
+        document.getElementById('quiz-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        
+        // Hiển thị điểm số (quy đổi thang 10 cho dễ hình dung)
+        // Tổng: 18 câu TN + 4 câu Đ/S (mỗi câu Đ/S có 4 ý).
+        // Tổng số đơn vị chấm: 18 + 4 = 22 câu.
+        const finalScore = (correctCount / 22) * 10;
+        document.getElementById('final-score').innerText = `Điểm số: ${finalScore.toFixed(1)} / 10`;
+        document.getElementById('result-detail').innerHTML = `<p>Bạn đã trả lời đúng tương đương <b>${correctCount}</b> trên tổng số <b>22</b> câu hỏi.</p>`;
+    }
+</script>
+
+</body>
+</html>
